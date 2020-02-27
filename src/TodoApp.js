@@ -5,7 +5,9 @@ import request from 'superagent';
 export default class TodoApp extends Component {
     state = { todos: [] }
     componentDidMount = async() => {
-        const todos = await request.get('http://localhost:5000/api/todos')
+        const user = JSON.parse(localStorage.getItem('user'));
+        const todos = await request.get(`http://localhost:${process.env.REACT_APP_BACK_END_PORT}/api/todos`)
+            .set('Authorization', user.token);
 
         console.log(todos.body)
         this.setState({ todos: todos.body })
@@ -19,19 +21,25 @@ export default class TodoApp extends Component {
             complete: false,
         };
 
+        const user = JSON.parse(localStorage.getItem('user'));
+
+
         const newTodos = [...this.state.todos, newTodo];
 
         this.setState({ todos: newTodos });
-        const data = await request.post('http://localhost:5000/api/todos', {
+        const data = await request.post(`http://localhost:${process.env.REACT_APP_BACK_END_PORT}/api/todos`, {
             task: this.state.todoInput
-        });
+        })
+            .set('Authorization', user.token);
     }
 
     handleInput = (e) => { this.setState({ todoInput: e.target.value })};
     
     render() {
+        if (localStorage.getItem('user')) {
         return (
             <div>
+                <h3>Hello {JSON.parse(localStorage.getItem('user')).email}</h3>
                 <AddTodo 
                 todoInput={ this.state.todoInput } 
                 handleClick={ this.handleClick } 
@@ -49,14 +57,17 @@ export default class TodoApp extends Component {
                         const matchingTodo = newTodos.find((thisTodo) => todo.id === thisTodo.id);
 
                         matchingTodo.complete = !todo.complete
-                                 
+                        const user = JSON.parse(localStorage.getItem('user'));
+                        
                         this.setState({ todos: newTodos });
-                        const data = await request.put(`http://localhost:5000/api/todos/${todo.id}`, matchingTodo);
+                        const data = await request.put(`http://localhost:${process.env.REACT_APP_BACK_END_PORT}/api/todos/${todo.id}`, matchingTodo)
+                        .set('Authorization', user.token);
                     }} key={todo.id}>
                         {todo.task}
                     </p>)
                 }
             </div>
         )
+            }
     }
 }
